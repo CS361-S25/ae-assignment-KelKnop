@@ -1,21 +1,28 @@
+// The reds
+
 #ifndef PREDATOR_H
 #define PREDATOR_H
-// Species 2
-#include "org.h"
+#include "org.h"  // Include the base Organism class
 
-class Predator : public Organism {
-    public:
-    Predator(emp::Ptr<emp::Random> _random, double _points = 0.0)
-        : Organism(_random, _points, 2) {}  // Species 2 for Predators
+// Derived class for Species 1 organisms
+class predatorOrganism : public Organism {
+public:
+    predatorOrganism(emp::Ptr<emp::Random> _random, double _points = 0.0)
+        : Organism(_random, _points) {}
 
-    void Interact(Organism &other) override {
-        // Predators try to eat Prey (species 1)
-        if (other.GetSpecies() == 1) {
-            std::cout << "Predator is hunting!" << std::endl;
-            this->AddPoints(other.GetPoints());  // Predator gains points by hunting
-            other.SetPoints(0);    // Prey loses all points (or "dies")
+    emp::Ptr<Organism> CheckReproduction() override {
+        if (this->GetPoints() >= 10000) {
+            std::cout << "Species 1 Reproducing" << std::endl;
+            emp::Ptr<predatorOrganism> offspring = emp::NewPtr<predatorOrganism>(*this);
+            offspring->SetPoints(0);
+            this->AddPoints(-10000);
+            return offspring;
+        } else {
+            std::cout << "Species 1: Not enough points to reproduce" << std::endl;
+            return emp::Ptr<Organism>(nullptr);
         }
     }
+
 };
 
 #endif

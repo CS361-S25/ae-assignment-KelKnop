@@ -22,43 +22,58 @@ class Organism {
     int GetPoints() const { return points; }
 
     void Process(int points) {
-        std::cout << "Processing" << std::endl; 
+        std::cout << "Processing" << std::endl; //feel free to get rid of this
         this->AddPoints(points);
     }
 
-    // This method can be overridden by subclasses (like Predator or Prey)
-    virtual void Interact(Organism &other) {
-        // Default behavior, maybe just nothing
-    }
+    void Interact(Organism &other) {
+        std::cout << "Interacting" << std::endl; //feel free to get rid of this
+        if (species == 0 && other.GetSpecies() == 1) {
+            // Species 0 (prey) interacts with Species 1 (predator)
+            std::cout << "Species 0 interacting with Species 1" << std::endl;
+            this->AddPoints(0); 
+            other.AddPoints(0); 
+        } else if (species == 1 && other.GetSpecies() == 0) {
+            // Species 1 (predator) interacts with Species 0 (prey)
+            std::cout << "Species 1 interacting with Species 0" << std::endl;
+            this->AddPoints(other.GetPoints());
+            other.SetPoints(-1);
+        }
+        
+    } 
 
-    emp::Ptr<Organism> CheckReproduction (){
-        if (species == 1) {
-            if (points >= 1000) {
+    // Updated CheckReproduction method with species-specific logic
+    virtual emp::Ptr<Organism> CheckReproduction (){
+        // Logic for species 0 prey
+        if (species == 0) {
+            if (points >= 120) {
                 std::cout << "Species 0 Reproducing" << std::endl;
                 emp::Ptr<Organism> offspring = new Organism(*this);  // Create offspring of the same type
                 offspring->SetPoints(0);
-                this->AddPoints(-1000);
+                this->AddPoints(-120);
                 offspring->SetSpecies(species);  // Set species for the offspring
                 return offspring;
             } else {
-                std::cout << "Species 1: Not enough points to reproduce" << std::endl;
+                std::cout << "Species 0: Not enough points to reproduce" << std::endl;
                 return emp::Ptr<Organism>(nullptr);  // Return null pointer if not enough points
             }
         }
 
-        else if (species == 2) {
-            if (points >= 1000) {
-                std::cout << "Species 2 Reproducing" << std::endl;
+        // Logic for species 1 predator
+        else if (species == 1) {
+            if (points >= 10000) {
+                std::cout << "Species 1 Reproducing" << std::endl;
                 emp::Ptr<Organism> offspring = new Organism(*this);  // Create offspring of the same type
                 offspring->SetPoints(0);
-                this->AddPoints(-1000);  // Different points cost for species 2
+                this->AddPoints(-10000);  // Different points cost for species 1
                 offspring->SetSpecies(species);  // Set species for the offspring
                 return offspring;
             } else {
                 std::cout << "Species 1: Not enough points to reproduce" << std::endl;
-                return emp::Ptr<Organism>(nullptr);  // Return null pointer if not enough points
+                
             }
         }
+
         // Default return to make the compiler happy (shouldn't be needed with correct logic)
         return emp::Ptr<Organism>(nullptr);
     }
