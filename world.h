@@ -14,6 +14,49 @@ private:
     emp::Random &random;                      // Reference to RNG
     emp::Ptr<emp::Random> random_ptr;         // Pointer to RNG for use by organisms
 
+    // --- PHASE HANDLERS ---
+    void RunInteractionPhase() {
+        emp::vector<size_t> interaction_schedule = emp::GetPermutation(random, GetSize());
+        for (int i : interaction_schedule) {
+            if (!IsOccupied(i)) continue;
+
+            emp::vector<size_t> neighbors = GetValidNeighborOrgIDs(i);
+            for (size_t neighbor_id : neighbors) {
+                pop[i]->Interact(*pop[neighbor_id]);
+            }
+        }
+    }
+
+    void RunCullingPhase() {
+        for (size_t i = 0; i < GetSize(); ++i) {
+            if (IsOccupied(i) && GetOrg(i).GetPoints() < 0) {
+                RemoveOrgAt(i);
+                pop[i] = nullptr;
+            }
+        }
+    }
+
+    void RunProcessingPhase() {
+        emp::vector<size_t> process_schedule = emp::GetPermutation(random, GetSize());
+        for (int i : process_schedule) {
+            if (!IsOccupied(i)) continue;
+            pop[i]->Process();
+        }
+    }
+
+    void RunReproductionPhase() {
+        emp::vector<size_t> reproduce_schedule = emp::GetPermutation(random, GetSize());
+        for (int i : reproduce_schedule) {
+            if (!IsOccupied(i)) continue;
+
+            emp::Ptr<Organism> offspring = pop[i]->CheckReproduction();
+            if (offspring) {
+                emp::WorldPosition offspring_pos = GetRandomNeighborPos(i);
+                AddOrgAt(offspring, offspring_pos);
+            }
+        }
+    }
+
 public:
     // Constructor initializes world and sets up RNG pointer
     OrgWorld(emp::Random &_random)
@@ -27,47 +70,10 @@ public:
     // Main update loop for the simulation
     void Update() {
         emp::World<Organism>::Update();
-
-        // --- INTERACTION PHASE ---
-        emp::vector<size_t> interaction_schedule = emp::GetPermutation(random, GetSize());
-        for (int i : interaction_schedule) {
-            if (!IsOccupied(i)) continue;
-
-            emp::vector<size_t> neighbors = GetValidNeighborOrgIDs(i);
-            for (size_t neighbor_id : neighbors) {
-                pop[i]->Interact(*pop[neighbor_id]);
-            }
-        }
-
-        // --- CULLING PHASE ---
-        // Remove organisms with negative points (e.g., prey that were eaten)
-        for (size_t i = 0; i < GetSize(); ++i) {
-            if (IsOccupied(i) && GetOrg(i).GetPoints() < 0) {
-                RemoveOrgAt(i);
-                pop[i] = nullptr;
-            }
-        }
-
-        // --- PROCESSING PHASE ---
-        // Let each organism perform any internal updates
-        emp::vector<size_t> process_schedule = emp::GetPermutation(random, GetSize());
-        for (int i : process_schedule) {
-            if (!IsOccupied(i)) continue;
-            pop[i]->Process();
-        }
-
-        // --- REPRODUCTION PHASE ---
-        // Check each organism for reproduction and add offspring if needed
-        emp::vector<size_t> reproduce_schedule = emp::GetPermutation(random, GetSize());
-        for (int i : reproduce_schedule) {
-            if (!IsOccupied(i)) continue;
-
-            emp::Ptr<Organism> offspring = pop[i]->CheckReproduction();
-            if (offspring) {
-                emp::WorldPosition offspring_pos = GetRandomNeighborPos(i);
-                AddOrgAt(offspring, offspring_pos);
-            }
-        }
+        RunInteractionPhase();
+        RunCullingPhase();
+        RunProcessingPhase();
+        RunReproductionPhase();
     }
 
     // Extract an organism from the world without deleting it

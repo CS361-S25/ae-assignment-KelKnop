@@ -64,33 +64,38 @@ public:
     // Called automatically on each frame when animation is active
     void DoFrame() override {
         canvas.Clear();  // Clear previous drawing
+        MoveAllOrganisms();     // Movement phase
+        world.Update();         // Update phase (reproduction, energy, etc.)
+        DrawAllOrganisms();     // Rendering phase
+    }
 
-        // Move each organism (if cell is occupied)
+    void MoveAllOrganisms() {
         for (size_t i = 0; i < world.GetSize(); ++i) {
             if (world.IsOccupied(i)) {
                 world.MoveOrganism(i);
             }
         }
+    }
 
-        // Update logic for all organisms (reproduction, energy, etc.)
-        world.Update();
-
-        // === Drawing organisms on the canvas ===
+    void DrawAllOrganisms() {
         int org_num = 0;
         for (int x = 0; x < num_w_boxes; x++) {
             for (int y = 0; y < num_h_boxes; y++) {
-                if (world.IsOccupied(org_num)) {
-                    // Red for predator, Blue for prey
-                    std::string color = (world.GetOrg(org_num).GetSpecies() == 1) ? "red" : "blue";
-                    canvas.Rect(x * RECT_SIDE, y * RECT_SIDE, RECT_SIDE, RECT_SIDE, color, "black");
-                } else {
-                    // White for empty space
-                    canvas.Rect(x * RECT_SIDE, y * RECT_SIDE, RECT_SIDE, RECT_SIDE, "white", "black");
-                }
+                DrawOrganismAt(org_num, x, y);
                 org_num++;
             }
         }
     }
+
+    void DrawOrganismAt(int index, int x, int y) {
+        if (world.IsOccupied(index)) {
+            std::string color = (world.GetOrg(index).GetSpecies() == 1) ? "red" : "blue";
+            canvas.Rect(x * RECT_SIDE, y * RECT_SIDE, RECT_SIDE, RECT_SIDE, color, "black");
+        } else {
+            canvas.Rect(x * RECT_SIDE, y * RECT_SIDE, RECT_SIDE, RECT_SIDE, "white", "black");
+        }
+    }
+
 };
 
 // Instantiate and run simulation
