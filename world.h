@@ -8,25 +8,30 @@
 #include "predator.h"
 #include "prey.h"
 
-// A world to manage and simulate interactions between Organisms
+// OrgWorld: Manages simulation of predator-prey dynamics
 class OrgWorld : public emp::World<Organism> {
 private:
-    emp::Random &random;                      // Reference to RNG
-    emp::Ptr<emp::Random> random_ptr;         // Pointer to RNG for use by organisms
+    emp::Random &random;               // Reference to random number generator
+    emp::Ptr<emp::Random> random_ptr;  // Pointer used by organisms
 
-    // --- PHASE HANDLERS ---
+    /**
+     * Handles organism interactions.
+     * Each organism interacts with its neighbors.
+     */
     void RunInteractionPhase() {
-        emp::vector<size_t> interaction_schedule = emp::GetPermutation(random, GetSize());
-        for (int i : interaction_schedule) {
+        auto schedule = emp::GetPermutation(random, GetSize());
+        for (int i : schedule) {
             if (!IsOccupied(i)) continue;
-
-            emp::vector<size_t> neighbors = GetValidNeighborOrgIDs(i);
-            for (size_t neighbor_id : neighbors) {
-                pop[i]->Interact(*pop[neighbor_id]);
+            for (size_t n : GetValidNeighborOrgIDs(i)) {
+                pop[i]->Interact(*pop[n]);
             }
         }
     }
 
+    /**
+     * Removes organisms with negative energy.
+     * Simulates death or removal from the environment.
+     */
     void RunCullingPhase() {
         for (size_t i = 0; i < GetSize(); ++i) {
             if (IsOccupied(i) && GetOrg(i).GetPoints() < 0) {
@@ -36,38 +41,50 @@ private:
         }
     }
 
+    /**
+     * Processes all organisms.
+     * Called once per update to apply internal changes.
+     */
     void RunProcessingPhase() {
-        emp::vector<size_t> process_schedule = emp::GetPermutation(random, GetSize());
-        for (int i : process_schedule) {
+        auto schedule = emp::GetPermutation(random, GetSize());
+        for (int i : schedule) {
             if (!IsOccupied(i)) continue;
             pop[i]->Process();
         }
     }
 
+    /**
+     * Handles reproduction for organisms with sufficient energy.
+     * Places offspring in a random adjacent cell.
+     */
     void RunReproductionPhase() {
-        emp::vector<size_t> reproduce_schedule = emp::GetPermutation(random, GetSize());
-        for (int i : reproduce_schedule) {
+        auto schedule = emp::GetPermutation(random, GetSize());
+        for (int i : schedule) {
             if (!IsOccupied(i)) continue;
-
-            emp::Ptr<Organism> offspring = pop[i]->CheckReproduction();
+            auto offspring = pop[i]->CheckReproduction();
             if (offspring) {
-                emp::WorldPosition offspring_pos = GetRandomNeighborPos(i);
-                AddOrgAt(offspring, offspring_pos);
+                AddOrgAt(offspring, GetRandomNeighborPos(i));
             }
         }
     }
 
 public:
-    // Constructor initializes world and sets up RNG pointer
+    /**
+     * Constructor for OrgWorld.
+     * Initializes base world and RNG pointer.
+     */
     OrgWorld(emp::Random &_random)
         : emp::World<Organism>(_random), random(_random) {
         random_ptr.New(_random);
     }
 
-    // Destructor
-    ~OrgWorld() { }
+    /// Default destructor
+    ~OrgWorld() = default;
 
-    // Main update loop for the simulation
+    /**
+     * Executes one full simulation update cycle.
+     * Includes interaction, culling, processing, and reproduction.
+     */
     void Update() {
         emp::World<Organism>::Update();
         RunInteractionPhase();
@@ -76,33 +93,36 @@ public:
         RunReproductionPhase();
     }
 
-    // Extract an organism from the world without deleting it
+    /**
+     * Removes and returns the organism at a given position.
+     * Does not delete the organism object.
+     * 
+     * @param pos Position in the world grid.
+     * @return Pointer to organism or nullptr if position is empty.
+     */
     emp::Ptr<Organism> ExtractOrganism(size_t pos) {
         if (!IsOccupied(pos)) return nullptr;
-        emp::Ptr<Organism> org = pop[pos];
+        auto org = pop[pos];
         pop[pos] = nullptr;
         return org;
     }
 
-    // Move an organism to a neighboring position
+    /**
+     * Moves an organism to a random neighboring position.
+     * If neighbor is occupied, the organism stays in place.
+     * 
+     * @param pos Position of the organism to move.
+     */
     void MoveOrganism(size_t pos) {
-        if (!IsOccupied(pos)) return;  // No organism to move
-
-        // Step 1: Extract the organism
-        emp::Ptr<Organism> org = ExtractOrganism(pos);
-        if (org == nullptr) return;
-
-        // Step 2: Choose a random neighboring position
-        emp::WorldPosition new_pos = GetRandomNeighborPos(pos);
-
-        // Step 3: Skip if neighbor is occupied (optional logic)
+        if (!IsOccupied(pos)) return;
+        auto org = ExtractOrganism(pos);
+        if (!org) return;
+        auto new_pos = GetRandomNeighborPos(pos);
         if (IsOccupied(new_pos)) {
-            AddOrgAt(org, pos);  // Return organism to original position
-            return;
+            AddOrgAt(org, pos);  // Return to original spot
+        } else {
+            AddOrgAt(org, new_pos);
         }
-
-        // Step 4: Move organism to new position
-        AddOrgAt(org, new_pos);
     }
 };
 

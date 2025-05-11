@@ -1,5 +1,3 @@
-// The reds (Predator Organism)
-
 #ifndef PREDATOR_H
 #define PREDATOR_H
 
@@ -8,39 +6,56 @@
 // PredatorOrganism: Represents the predator species (Species 1)
 class predatorOrganism : public Organism {
 public:
-    // Constructor: sets species and optionally starting points
+    /**
+     * Constructor for the predator organism.
+     * Sets the species to 1 (predator) and optionally initializes energy points.
+     * 
+     * @param _random Pointer to random number generator.
+     * @param _points Initial energy points (default: 0).
+     */
     predatorOrganism(emp::Ptr<emp::Random> _random, double _points = 0.0)
         : Organism(_random, _points) {
         SetSpecies(1);  // Species 1 = predator
     }
 
-    // Processing logic each update
+    /**
+     * Processes the predator's behavior each update.
+     * Predators lose energy over time to simulate the cost of movement or hunting.
+     */
     void Process() override {
-        // Predators lose points over time to simulate energy cost
-        this->AddPoints(-30);
+        this->AddPoints(-30);  // Predators lose 30 points per update
     }
 
-    // Interact with another organism
+    /**
+     * Interacts with another organism (prey).
+     * The predator gains energy from the prey and marks the prey for removal.
+     * 
+     * @param other The other organism involved in the interaction (typically prey).
+     */
     void Interact(Organism &other) override {
         std::cout << "Predator eating prey..." << std::endl;
 
-        // Predator gains points from prey, prey is marked for death
-        this->AddPoints(other.GetPoints());
+        this->AddPoints(other.GetPoints());  // Gain points from prey
         other.SetPoints(-1);  // Mark prey for removal
     }
 
-    // Check if the predator is ready to reproduce
+    /**
+     * Checks if the predator is ready to reproduce.
+     * If the predator has enough energy, it reproduces and creates an offspring.
+     * 
+     * @return A new predator organism if ready to reproduce, or nullptr if not.
+     */
     emp::Ptr<Organism> CheckReproduction() override {
         if (this->GetPoints() >= 8000) {
             std::cout << "Predator: Reproducing" << std::endl;
 
             // Create offspring with 100 points, subtract cost from parent
             emp::Ptr<predatorOrganism> offspring = emp::NewPtr<predatorOrganism>(*this);
-            offspring->SetPoints(7500);
-            this->AddPoints(-8000);
-            return offspring;
+            offspring->SetPoints(7500);  // Set offspring's energy
+            this->AddPoints(-8000);      // Deduct energy from parent
+            return offspring;            // Return new offspring
         } else {
-            return emp::Ptr<Organism>(nullptr);
+            return emp::Ptr<Organism>(nullptr);  // Not ready to reproduce
         }
     }
 };
